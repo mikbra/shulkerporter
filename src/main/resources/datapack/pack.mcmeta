@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "Shulkerporter: keeps Shulkerporter data when the box is broken",
+    "min_format": 121,
+    "max_format": 121
+  }
+}

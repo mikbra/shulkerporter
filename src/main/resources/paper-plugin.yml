@@ -1,0 +1,13 @@
+name: Shulkerporter
+version: '${version}'
+main: dev.shulkerporter.ShulkerporterPlugin
+bootstrapper: dev.shulkerporter.ShulkerporterBootstrap
+api-version: '${minecraftVersion}'
+description: Teleport the contents of a named shulker box to the nearest box with the same name.
+permissions:
+  shulkerporter.craft:
+    description: Allows crafting a Shulkerporter.
+    default: true
+  shulkerporter.admin:
+    description: Allows the /shulkerporter admin command.
+    default: op

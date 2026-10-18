@@ -1,0 +1,46 @@
+# Minimum ticks between two sends from the same Shulkerporter (20 ticks = 1 second).
+cooldown-ticks: 10
+
+# How often (in ticks) Shulkerporters are checked for redstone power. This is a backup for
+# block updates, which normally trigger a send immediately.
+poll-interval-ticks: 2
+
+# Maximum distance in blocks to the receiving Shulkerporter. 0 means unlimited (same world only).
+max-distance: 0
+
+effects:
+  # Sound and particles on both ends when items are sent.
+  send: true
+  # Occasional portal particles around placed Shulkerporters.
+  ambient: true
+
+item:
+  # Enchantment shimmer on the Shulkerporter item, so it stands out even without the resource pack.
+  glint: true
+
+# Draw the resource pack's Shulkerporter model over placed boxes, for players who loaded the pack.
+# Players without the pack always see a plain black shulker box.
+placed-model: true
+
+resource-pack:
+  # auto:     the official pack published on GitHub Pages; if this jar has none, same as builtin.
+  # official: only the official pack published on GitHub Pages.
+  # builtin:  serve the pack bundled in the plugin from a small HTTP server on this machine.
+  # url:      send the pack hosted at `url` below.
+  # off:      don't send a resource pack.
+  mode: auto
+  builtin:
+    # Only used by builtin (or auto without an official pack).
+    # TCP port for the pack download. Players must be able to reach it, so open it in your
+    # firewall / port forwarding just like the Minecraft port.
+    port: 25580
+    # Hostname or IP players use to reach this server (e.g. mc.example.com). If empty, the
+    # server-ip from server.properties is used, or localhost, which only works on this machine.
+    public-address: ""
+  # Only used when mode is url: public URL of shulkerporter-pack.zip (built by `gradle resourcePack`).
+  url: ""
+  # Only used when mode is url: SHA-1 of the zip. If empty, the plugin downloads it once to compute it.
+  sha1: ""
+  # Kick players who decline the pack.
+  required: false
+  prompt: "Shulkerporter uses a small resource pack for its custom look."
