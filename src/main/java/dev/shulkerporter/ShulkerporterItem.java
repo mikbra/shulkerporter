@@ -9,6 +9,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.jspecify.annotations.Nullable;
@@ -42,9 +43,13 @@ final class ShulkerporterItem {
                 && item.getPersistentDataContainer().has(Keys.PORTAL);
     }
 
-    /** True for a black shulker box with nothing inside, the only kind the recipe accepts. */
+    /**
+     * True for an empty shulker box of any colour that isn't already a Shulkerporter or
+     * Shulkerpopper: the only kind the recipes accept.
+     */
     static boolean isEmptyBox(ItemStack item) {
-        if (item.getType() != MATERIAL || is(item) || item.hasData(DataComponentTypes.CONTAINER_LOOT)) {
+        if (!Tag.SHULKER_BOXES.isTagged(item.getType()) || is(item) || ShulkerpopperItem.is(item)
+                || item.hasData(DataComponentTypes.CONTAINER_LOOT)) {
             return false;
         }
         ItemContainerContents contents = item.getData(DataComponentTypes.CONTAINER);

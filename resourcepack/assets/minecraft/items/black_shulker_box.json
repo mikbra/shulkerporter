@@ -19,6 +19,46 @@
             }
           ]
         }
+      },
+      {
+        "when": "shulkerpopper_type",
+        "model": {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_base"
+            },
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_lid_type"
+            },
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_intake_type"
+            }
+          ]
+        }
+      },
+      {
+        "when": "shulkerpopper_exact",
+        "model": {
+          "type": "minecraft:composite",
+          "models": [
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_base"
+            },
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_lid_exact"
+            },
+            {
+              "type": "minecraft:model",
+              "model": "shulkerporter:block/popper_intake_exact"
+            }
+          ]
+        }
       }
     ],
     "fallback": {

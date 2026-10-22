@@ -12,11 +12,11 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 
 /** Opens and closes the model lid with the box, and shows models to players with the pack. */
-final class PorterModelListener implements Listener {
+final class BoxModelListener implements Listener {
 
-    private final PorterModels models;
+    private final BoxModels models;
 
-    PorterModelListener(PorterModels models) {
+    BoxModelListener(BoxModels models) {
         this.models = models;
     }
 

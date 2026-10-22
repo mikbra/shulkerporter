@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.shulkerporter"
-version = "0.1.0"
+version = "0.2.0"
 
 val minecraftVersion = "26.3"
 

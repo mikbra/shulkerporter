@@ -1,6 +1,7 @@
 package dev.shulkerporter;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -11,14 +12,17 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Chunk;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
-/** /shulkerporter give | list [channel] | rescan */
+/** /shulkerporter give (porter | popper type|exact) [players] | list [channel] | rescan */
 final class ShulkerporterCommand {
 
     private final ShulkerporterPlugin plugin;
@@ -31,10 +35,10 @@ final class ShulkerporterCommand {
         return Commands.literal("shulkerporter")
                 .requires(source -> source.getSender().hasPermission("shulkerporter.admin"))
                 .then(Commands.literal("give")
-                        .executes(ctx -> giveTo(ctx, ctx.getSource().getExecutor() instanceof Player p ? List.of(p) : List.of()))
-                        .then(Commands.argument("targets", ArgumentTypes.players())
-                                .executes(ctx -> giveTo(ctx, ctx.getArgument("targets", PlayerSelectorArgumentResolver.class)
-                                        .resolve(ctx.getSource())))))
+                        .then(giveCommand("porter", () -> ShulkerporterItem.create(plugin.settings().glint())))
+                        .then(Commands.literal("popper")
+                                .then(giveCommand("type", () -> popper(PopperMode.TYPE)))
+                                .then(giveCommand("exact", () -> popper(PopperMode.EXACT)))))
                 .then(Commands.literal("list")
                         .executes(this::listChannels)
                         .then(Commands.argument("channel", StringArgumentType.greedyString())
@@ -44,15 +48,27 @@ final class ShulkerporterCommand {
                 .build();
     }
 
-    private int giveTo(CommandContext<CommandSourceStack> ctx, List<Player> players) {
+    private ItemStack popper(PopperMode mode) {
+        return ShulkerpopperItem.create(Material.LIGHT_BLUE_SHULKER_BOX, mode, plugin.settings().glint());
+    }
+
+    private LiteralArgumentBuilder<CommandSourceStack> giveCommand(String name, Supplier<ItemStack> item) {
+        return Commands.literal(name)
+                .executes(ctx -> giveTo(ctx, ctx.getSource().getExecutor() instanceof Player p ? List.of(p) : List.of(), item))
+                .then(Commands.argument("targets", ArgumentTypes.players())
+                        .executes(ctx -> giveTo(ctx, ctx.getArgument("targets", PlayerSelectorArgumentResolver.class)
+                                .resolve(ctx.getSource()), item)));
+    }
+
+    private int giveTo(CommandContext<CommandSourceStack> ctx, List<Player> players, Supplier<ItemStack> item) {
         if (players.isEmpty()) {
-            ctx.getSource().getSender().sendMessage(Component.text("Name a player to give the Shulkerporter to.", NamedTextColor.RED));
+            ctx.getSource().getSender().sendMessage(Component.text("Name a player to give it to.", NamedTextColor.RED));
             return 0;
         }
         for (Player player : players) {
-            player.give(ShulkerporterItem.create(plugin.settings().glint()));
+            player.give(item.get());
         }
-        ctx.getSource().getSender().sendMessage(Component.text("Gave a Shulkerporter to " + players.size() + " player(s)."));
+        ctx.getSource().getSender().sendMessage(Component.text("Gave it to " + players.size() + " player(s)."));
         return players.size();
     }
 
@@ -95,7 +111,7 @@ final class ShulkerporterCommand {
         int chunks = 0;
         for (World world : plugin.getServer().getWorlds()) {
             for (Chunk chunk : world.getLoadedChunks()) {
-                plugin.service().reconcile(chunk);
+                plugin.reconcile(chunk);
                 chunks++;
             }
         }

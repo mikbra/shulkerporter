@@ -1,13 +1,10 @@
 package dev.shulkerporter;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -35,9 +32,9 @@ final class PortalService {
     private final Map<PortalPos, Integer> lastSendTick = new HashMap<>();
     /** Sources waiting for the receiving chunk to load. */
     private final Set<PortalPos> inFlight = new HashSet<>();
-    private final @Nullable PorterModels models;
+    private final @Nullable BoxModels models;
 
-    PortalService(ShulkerporterPlugin plugin, PortalRegistry registry, @Nullable PorterModels models) {
+    PortalService(ShulkerporterPlugin plugin, PortalRegistry registry, @Nullable BoxModels models) {
         this.plugin = plugin;
         this.registry = registry;
         this.models = models;
@@ -68,7 +65,7 @@ final class PortalService {
             registry.unregister(pos);
         }
         if (models != null) {
-            models.ensure(block);
+            models.ensure(block, BoxModels.Look.PORTER);
         }
         if (plugin.settings().sendEffects()) {
             block.getWorld().spawnParticle(Particle.REVERSE_PORTAL, pos.center(block.getWorld()), 30, 0.3, 0.3, 0.3, 0.05);
@@ -86,15 +83,15 @@ final class PortalService {
     }
 
     /**
-     * Brings the index and the models in line with the Shulkerporters actually present in a
-     * loaded chunk.
+     * Brings the index in line with the Shulkerporters actually present in a loaded chunk.
+     * Returns them, named or not, with their look.
      */
-    void reconcile(Chunk chunk) {
+    Map<Block, BoxModels.Look> reconcile(Chunk chunk) {
         Set<PortalPos> named = new HashSet<>();
-        List<Block> marked = new ArrayList<>();
+        Map<Block, BoxModels.Look> marked = new HashMap<>();
         for (BlockState state : chunk.getTileEntities(block -> block.getType() == ShulkerporterItem.MATERIAL, false)) {
             if (state instanceof ShulkerBox box && box.getPersistentDataContainer().has(Keys.PORTAL)) {
-                marked.add(state.getBlock());
+                marked.put(state.getBlock(), BoxModels.Look.PORTER);
                 PortalPos pos = PortalPos.of(state.getBlock());
                 String channel = Channels.of(box.customName());
                 if (channel != null) {
@@ -103,35 +100,17 @@ final class PortalService {
                 }
             }
         }
-        UUID world = chunk.getWorld().getUID();
-        for (PortalPos pos : registry.inChunk(world, chunk.getX(), chunk.getZ())) {
+        for (PortalPos pos : registry.inChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ())) {
             if (!named.contains(pos)) {
                 registry.unregister(pos);
             }
         }
-        if (models != null) {
-            Set<PortalPos> present = new HashSet<>();
-            marked.forEach(block -> present.add(PortalPos.of(block)));
-            for (PortalPos pos : models.inChunk(world, chunk.getX(), chunk.getZ())) {
-                if (!present.contains(pos)) {
-                    models.remove(pos);
-                }
-            }
-            // Spawning entities while the chunk is still loading is unsafe; do it next tick.
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (chunk.isLoaded()) {
-                    marked.stream().filter(PortalService::isPortalBlock).forEach(models::ensure);
-                }
-            });
-        }
+        return marked;
     }
 
     void chunkUnloaded(Chunk chunk) {
         for (PortalPos pos : registry.inChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ())) {
             lastPower.remove(pos);
-        }
-        if (models != null) {
-            models.removeChunk(chunk);
         }
     }
 

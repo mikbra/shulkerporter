@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "shulkerporter:block/popper_top",
+    "intake": "shulkerporter:block/popper_intake_exact"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        16.14,
+        0
+      ],
+      "to": [
+        16,
+        16.14,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "up": {
+          "texture": "#intake",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

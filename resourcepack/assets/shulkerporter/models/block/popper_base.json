@@ -1,0 +1,167 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "shulkerporter:block/popper_base_side",
+    "side": "shulkerporter:block/popper_base_side",
+    "bottom": "shulkerporter:block/popper_bottom",
+    "band": "shulkerporter:block/popper_band"
+  },
+  "elements": [
+    {
+      "from": [
+        -0.04,
+        -0.04,
+        -0.04
+      ],
+      "to": [
+        16.04,
+        8.04,
+        16.04
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        },
+        "up": {
+          "texture": "#bottom"
+        },
+        "down": {
+          "texture": "#bottom"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        -0.06
+      ],
+      "to": [
+        16,
+        8,
+        -0.06
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "north": {
+          "texture": "#band",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        16.06
+      ],
+      "to": [
+        16,
+        8,
+        16.06
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "south": {
+          "texture": "#band",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        16.06,
+        0,
+        0
+      ],
+      "to": [
+        16.06,
+        8,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "east": {
+          "texture": "#band",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        -0.06,
+        0,
+        0
+      ],
+      "to": [
+        -0.06,
+        8,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "west": {
+          "texture": "#band",
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ]
+        }
+      }
+    }
+  ]
+}

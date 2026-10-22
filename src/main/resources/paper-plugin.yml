@@ -8,6 +8,12 @@ permissions:
   shulkerporter.craft:
     description: Allows crafting a Shulkerporter.
     default: true
+  shulkerporter.popper.craft:
+    description: Allows crafting a Shulkerpopper.
+    default: true
+  shulkerporter.popper.mode:
+    description: Allows /shulkerpopper mode to show or change a Shulkerpopper's filter mode.
+    default: true
   shulkerporter.admin:
     description: Allows the /shulkerporter admin command.
     default: op

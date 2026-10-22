@@ -13,6 +13,7 @@ import net.kyori.adventure.key.Key;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -24,22 +25,31 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Draws the resource-pack model over each placed Shulkerporter: a base and a lid item display,
- * slightly larger than the vanilla box so they hide it. The lid copies the vanilla lid animation
- * when the box is opened. The displays are only shown to players who loaded the resource pack;
- * everyone else sees the plain black shulker box.
+ * Draws a resource-pack model over each placed Shulkerporter and Shulkerpopper: a base and a lid
+ * item display, slightly larger than the vanilla box so they hide it, plus an optional intake
+ * plate on the box's top face. The lid copies the vanilla lid animation when the box is opened.
+ * The displays are only shown to players who loaded the resource pack; everyone else sees the
+ * plain shulker box.
  */
-final class PorterModels {
+final class BoxModels {
+
+    /** Which models to draw for a box. The intake plate, if any, always sits on the world-up face. */
+    record Look(Key base, Key lid, @Nullable Key intake) {
+
+        static final Look PORTER = new Look(model("porter_base"), model("porter_lid"), null);
+
+        static Key model(String name) {
+            return Key.key(Keys.NAMESPACE, name);
+        }
+    }
 
     /** Vanilla lid motion: up half a block and a -270° twist, linearly over 10 ticks. */
     private static final float LID_LIFT = 0.5f;
     private static final float LID_TWIST_DEGREES = -270f;
     private static final float STEP = 0.1f;
-
-    private static final Key BASE_MODEL = Key.key(Keys.NAMESPACE, "porter_base");
-    private static final Key LID_MODEL = Key.key(Keys.NAMESPACE, "porter_lid");
 
     private final ShulkerporterPlugin plugin;
     private final Map<PortalPos, Model> models = new HashMap<>();
@@ -48,52 +58,65 @@ final class PorterModels {
     private final Set<UUID> viewers = new HashSet<>();
 
     private static final class Model {
-        final ItemDisplay base;
+        final Look look;
+        final BlockFace facing;
+        final Quaternionf rotation;
+        final List<ItemDisplay> displays = new ArrayList<>();
         final ItemDisplay lid;
-        final Quaternionf facing;
+        final @Nullable ItemDisplay intake;
         float progress;
         boolean open;
 
-        Model(ItemDisplay base, ItemDisplay lid, Quaternionf facing) {
-            this.base = base;
-            this.lid = lid;
+        Model(Look look, BlockFace facing, Quaternionf rotation, ItemDisplay base, ItemDisplay lid, @Nullable ItemDisplay intake) {
+            this.look = look;
             this.facing = facing;
+            this.rotation = rotation;
+            this.lid = lid;
+            this.intake = intake;
+            displays.add(base);
+            displays.add(lid);
+            if (intake != null) {
+                displays.add(intake);
+            }
         }
 
         boolean valid() {
-            return base.isValid() && lid.isValid();
+            return displays.stream().allMatch(ItemDisplay::isValid);
         }
 
         void remove() {
-            base.remove();
-            lid.remove();
+            displays.forEach(ItemDisplay::remove);
         }
     }
 
-    PorterModels(ShulkerporterPlugin plugin) {
+    BoxModels(ShulkerporterPlugin plugin) {
         this.plugin = plugin;
     }
 
-    /** Spawns the model for a Shulkerporter block, unless it already has a live one. */
-    void ensure(Block block) {
+    /** Spawns the model for a box, unless it already has a live one with the same look and facing. */
+    void ensure(Block block, Look look) {
         PortalPos pos = PortalPos.of(block);
+        BlockFace facing = block.getBlockData() instanceof Directional directional ? directional.getFacing() : BlockFace.UP;
         Model existing = models.get(pos);
-        Quaternionf facing = facing(block);
-        if (existing != null && existing.valid() && existing.facing.equals(facing)) {
+        if (existing != null && existing.valid() && existing.look.equals(look) && existing.facing == facing) {
             return;
         }
         remove(pos);
         Location center = pos.center(block.getWorld());
-        Model model = new Model(
-                spawn(center, BASE_MODEL, new Transformation(new Vector3f(), new Quaternionf(facing), new Vector3f(1), new Quaternionf())),
-                spawn(center, LID_MODEL, lidTransformation(facing, 0)),
-                facing);
+        Quaternionf rotation = rotation(facing);
+        // No intake when the base (the output side) faces up: then the top face is the output.
+        ItemDisplay intake = look.intake() != null && facing != BlockFace.DOWN
+                ? spawn(center, look.intake(), identity())
+                : null;
+        Model model = new Model(look, facing, rotation,
+                spawn(center, look.base(), new Transformation(new Vector3f(), new Quaternionf(rotation), new Vector3f(1), new Quaternionf())),
+                spawn(center, look.lid(), lidTransformation(rotation, 0)),
+                intake);
         models.put(pos, model);
         for (UUID id : viewers) {
             Player player = plugin.getServer().getPlayer(id);
             if (player != null) {
-                player.showEntity(plugin, model.base);
-                player.showEntity(plugin, model.lid);
+                model.displays.forEach(display -> player.showEntity(plugin, display));
             }
         }
     }
@@ -122,15 +145,38 @@ final class PorterModels {
 
     /** Removes the models in a chunk that is unloading; they are recreated when it loads again. */
     void removeChunk(Chunk chunk) {
-        UUID world = chunk.getWorld().getUID();
-        for (PortalPos pos : List.copyOf(models.keySet())) {
-            if (pos.world().equals(world) && pos.chunkX() == chunk.getX() && pos.chunkZ() == chunk.getZ()) {
-                remove(pos);
-            }
+        for (PortalPos pos : inChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ())) {
+            remove(pos);
         }
     }
 
-    List<PortalPos> inChunk(UUID world, int chunkX, int chunkZ) {
+    /**
+     * Makes a loaded chunk's models match the boxes found in it. Spawning entities while a chunk
+     * is still loading is unsafe, so new models are created on the next tick.
+     */
+    void sync(Chunk chunk, Map<Block, Look> present) {
+        Set<PortalPos> keep = new HashSet<>();
+        present.keySet().forEach(block -> keep.add(PortalPos.of(block)));
+        for (PortalPos pos : inChunk(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ())) {
+            if (!keep.contains(pos)) {
+                remove(pos);
+            }
+        }
+        if (present.isEmpty()) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (chunk.isLoaded()) {
+                present.forEach((block, look) -> {
+                    if (Tag.SHULKER_BOXES.isTagged(block.getType())) {
+                        ensure(block, look);
+                    }
+                });
+            }
+        });
+    }
+
+    private List<PortalPos> inChunk(UUID world, int chunkX, int chunkZ) {
         List<PortalPos> result = new ArrayList<>();
         for (PortalPos pos : models.keySet()) {
             if (pos.world().equals(world) && pos.chunkX() == chunkX && pos.chunkZ() == chunkZ) {
@@ -166,13 +212,25 @@ final class PorterModels {
             model.progress = model.open
                     ? Math.min(target, model.progress + STEP)
                     : Math.max(target, model.progress - STEP);
-            model.lid.setInterpolationDelay(0);
-            model.lid.setInterpolationDuration(1);
-            model.lid.setTransformation(lidTransformation(model.facing, model.progress));
+            Transformation lid = lidTransformation(model.rotation, model.progress);
+            animate(model.lid, lid);
+            if (model.intake != null) {
+                // On an upward box the intake plate lies on the lid and moves with it; on a sideways
+                // box it would float over the opening, so it shrinks away instead.
+                animate(model.intake, model.facing == BlockFace.UP
+                        ? lid
+                        : new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1 - model.progress), new Quaternionf()));
+            }
             if (model.progress == target) {
                 it.remove();
             }
         }
+    }
+
+    private static void animate(ItemDisplay display, Transformation transformation) {
+        display.setInterpolationDelay(0);
+        display.setInterpolationDuration(1);
+        display.setTransformation(transformation);
     }
 
     /** Drops models whose block was removed without an event (e.g. by a piston or /setblock). */
@@ -182,7 +240,7 @@ final class PorterModels {
             World world = pos.world(plugin.getServer());
             if (world == null || !entry.getValue().valid()
                     || (world.isChunkLoaded(pos.chunkX(), pos.chunkZ())
-                        && world.getBlockAt(pos.x(), pos.y(), pos.z()).getType() != ShulkerporterItem.MATERIAL)) {
+                        && !Tag.SHULKER_BOXES.isTagged(world.getBlockAt(pos.x(), pos.y(), pos.z()).getType()))) {
                 remove(pos);
             }
         }
@@ -191,8 +249,7 @@ final class PorterModels {
     void showTo(Player player) {
         if (viewers.add(player.getUniqueId())) {
             for (Model model : models.values()) {
-                player.showEntity(plugin, model.base);
-                player.showEntity(plugin, model.lid);
+                model.displays.forEach(display -> player.showEntity(plugin, display));
             }
         }
     }
@@ -200,14 +257,17 @@ final class PorterModels {
     void hideFrom(Player player) {
         if (viewers.remove(player.getUniqueId())) {
             for (Model model : models.values()) {
-                player.hideEntity(plugin, model.base);
-                player.hideEntity(plugin, model.lid);
+                model.displays.forEach(display -> player.hideEntity(plugin, display));
             }
         }
     }
 
     void forget(Player player) {
         viewers.remove(player.getUniqueId());
+    }
+
+    private static Transformation identity() {
+        return new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1), new Quaternionf());
     }
 
     private static Transformation lidTransformation(Quaternionf facing, float progress) {
@@ -217,8 +277,7 @@ final class PorterModels {
     }
 
     /** Rotation that turns the model's up axis towards the box's facing. */
-    private static Quaternionf facing(Block block) {
-        BlockFace face = block.getBlockData() instanceof Directional directional ? directional.getFacing() : BlockFace.UP;
+    private static Quaternionf rotation(BlockFace face) {
         float quarter = (float) (Math.PI / 2);
         return switch (face) {
             case DOWN -> new Quaternionf().rotationX((float) Math.PI);

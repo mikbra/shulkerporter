@@ -1,0 +1,194 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "shulkerporter:block/popper_lid_side",
+    "side": "shulkerporter:block/popper_lid_side",
+    "top": "shulkerporter:block/popper_top",
+    "bottom": "shulkerporter:block/popper_bottom",
+    "flow": "shulkerporter:block/popper_flow",
+    "emblem": "shulkerporter:block/popper_emblem_exact"
+  },
+  "elements": [
+    {
+      "from": [
+        -0.08,
+        4,
+        -0.08
+      ],
+      "to": [
+        16.08,
+        16.08,
+        16.08
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        },
+        "up": {
+          "texture": "#top"
+        },
+        "down": {
+          "texture": "#bottom"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        4,
+        -0.1
+      ],
+      "to": [
+        16,
+        16,
+        -0.1
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "north": {
+          "texture": "#flow",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        16.1,
+        4,
+        0
+      ],
+      "to": [
+        16.1,
+        16,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "east": {
+          "texture": "#flow",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        4,
+        16.1
+      ],
+      "to": [
+        16,
+        16,
+        16.1
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "south": {
+          "texture": "#flow",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        -0.1,
+        4,
+        0
+      ],
+      "to": [
+        -0.1,
+        16,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "west": {
+          "texture": "#flow",
+          "uv": [
+            0,
+            0,
+            16,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        16.1,
+        0
+      ],
+      "to": [
+        16,
+        16.1,
+        16
+      ],
+      "light_emission": 15,
+      "shade_direction_override": "up",
+      "faces": {
+        "up": {
+          "texture": "#emblem",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}
